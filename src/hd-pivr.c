@@ -21,7 +21,7 @@
 #include <signal.h>
 #include <assert.h>
 
-//size to read/write from hdpvr at.. 4k seems ok.
+//size to read/write from hd pvr at.. 4k seems ok.
 #define MEMBUF_SIZE 4096
 
 //how long to wait before giving up and declaring device needs a restart.
