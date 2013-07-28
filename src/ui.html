@@ -1,0 +1,185 @@
+<html>
+<head>
+<title>Pi/HD PVR Test UI</title>
+</head>
+<body>
+  <h3>Pi & HD PVR Test UI</h3><hr>
+  <p>
+  <table>
+    <tr bgcolor="#d0d0d0">
+    <td>
+	     Text Status via POST.
+	  </td>
+	  <td>
+	     JSON Status via POST.
+	  </td>
+	  <td>
+	     Start recording [noargs] via POST. <br>
+		 If no Id's specified, UI.Int.Ext / UI.Int.Ext will be used.
+	  </td>
+	  <td>
+	     Stop recording [noargs] via POST. <br>
+		 If no Id's specified, UI.Int.Ext / UI.Int.Ext will be used.<br>
+		 Empty String for both Id's means stop EVERYTHING.
+	  </td>	  
+	</tr>
+    <tr bgcolor="#ffffff">
+	  <td>
+	     action=status
+	  </td>
+	  <td>
+	     action=jstatus
+	  </td>
+	  <td>
+	     action=startrec&<br>
+		 intId=IntId&<br>
+		 extId=ExtId<br>
+	  </td>
+	  <td>
+	     action=stoprec&<br>
+		 intId=IntId&<br>
+		 extId=ExtId<br>
+	  </td>	  
+	</tr>	
+    <tr bgcolor="#d0d0d0">
+	  <td>
+	     <form method="post" action="/action" target="textstatus">
+		   <input type="hidden" name="action" value="status">
+		   <input type="submit" value="Get Status">
+		 </form>
+      </td>
+	  <td>
+	     <form method="post" action="/action" target="jsonstatus">
+		   <input type="hidden" name="action" value="jstatus">
+		   <input type="submit" value="Get Status">
+		 </form>
+      </td>
+	  <td>
+	     <form method="post" action="/action" target="startrec">
+		   <input type="hidden" name="action" value="startrec">
+		   <input type="submit" value="Start Recording">
+		 </form>
+      </td>
+	  <td>
+	     <form method="post" action="/action" target="stoprec">
+		   <input type="hidden" name="action" value="stoprec">
+		   <input type="submit" value="Stop Recording">
+		 </form>
+      </td>
+	</tr>
+	<tr>
+	  <td>
+	    <iframe id="textstatus" name="textstatus" scrolling="auto"></iframe>
+	  </td>
+	  <td>
+	    <iframe id="jsonstatus" name="jsonstatus" scrolling="auto"></iframe>
+	  </td>
+	  <td>
+	    <iframe id="startrec" name="startrec" scrolling="auto"></iframe>
+	  </td>
+	  <td>
+	    <iframe id="stoprec" name="stoprec" scrolling="auto"></iframe>
+	  </td>	  
+	</tr>
+	
+	<tr bgcolor="#d0d0d0">
+	  <td>
+	     Event List via POST.
+	  </td>
+	  <td>
+	     Event Add via POST.
+	  </td>
+	  <td>
+	     Event Add via POST (autoID)
+	  </td>
+	  <td>
+	     Event Remove via POST
+	  </td>	  
+	</tr>
+    <tr bgcolor="#ffffff">
+	  <td>
+	     action=listevents
+	  </td>
+	  <td>
+	     action=addevent&<br>type=0&<br>time=2 Jan 2010 12:45:20&<br>data=wibble fish&<br>
+		 intId=IntId&<br>extId=ExtId
+	  </td>
+	  <td>
+	     action=addevent&<br>type=0&<br>time=2 Jan 2010 12:45:20&<br>data=wibble fish&<br>
+		 extId=ExtId
+	  </td>
+	  <td>
+		 action=removeevent&<br>
+		 intId=IntId&<br>extId=ExtId
+	  </td>	  
+	</tr>	
+    <tr bgcolor="#d0d0d0">
+	  <td>
+	     <form method="post" action="/action" target="listevents">
+		   <input type="hidden" name="action" value="listevents">
+		   <input type="submit" value="Get Events">
+		 </form>
+      </td>
+	  <td>
+	     <form method="post" action="/action" target="addevent">
+		   <input type="hidden" name="action" value="addevent">
+		    Type:<input type="text" name="type" value="0"/><br>
+		    Time:<input type="text" name="time" value="2 Jan 2010 12:45:20"/><br>
+		 Filename:<input type="text" name="filename" value="scheduled.ts"/><br>
+		 ShowID:<input type="text" name="showid" value="tt12345678"/><br>
+		   IntID:<input type="text" name="intId" value="IntId"/><br>
+		   ExtID:<input type="text" name="extId" value="ExtId"/><br>
+		   <input type="submit" value="Add Event"><br>
+		 </form>
+      </td>
+	  <td>
+	     <form method="post" action="/action" target="addeventauto">
+		   <input type="hidden" name="action" value="addevent">
+		    Type:<input type="text" name="type" value="0"/><br>
+		    Time:<input type="text" name="time" value="2 Jan 2010 12:45:20"/><br>
+		 Filename:<input type="text" name="filename" value="scheduled.ts"/><br>
+		 ShowID:<input type="text" name="showid" value="tt12345678"/><br>
+		   IntID:<i>AutoAssign</i><br>
+		   ExtID:<input type="text" name="extId" value="ExtId"/><br>
+		   <input type="submit" value="Add Event"><br>
+		 </form>
+      </td>
+	  <td>
+	  	 <form method="post" action="/action" target="removeevent">
+		   <input type="hidden" name="action" value="removeevent">
+		   IntID:<input type="text" name="intId" value="IntId"/><br>
+		   ExtID:<input type="text" name="extId" value="ExtId"/><br>
+		   <input type="submit" value="Remove Event"><br>
+		 </form>
+      </td>
+	</tr>
+	<tr>
+	  <td>
+	    <iframe id="listevents" name="listevents" scrolling="auto"></iframe>
+	  </td>
+	  <td>
+	    <iframe id="addevent" name="addevent" scrolling="auto"></iframe>
+	  </td>
+	  <td>
+	    <iframe id="addeventauto" name="addeventauto" scrolling="auto"></iframe>
+	  </td>
+	  <td>
+	  	<iframe id="removeevent" name="removeevent" scrolling="auto"></iframe>
+	  </td>	  
+	</tr>
+	
+	<tr bgcolor="#d0d0d0">
+	  <td colspan="4">
+	    <a href="/web/video.html" target="video">Launch Video (Requires VLC Plugin</a>
+  	  </td>
+	</tr>
+	<tr bgcolor="#000000" height="480">
+	  <td colspan="4" rowspan="4" height="500">
+	    <iframe id="video" name="video" width="100%" height="100%"></iframe>
+  	  </td>
+	</tr>
+  </table>
+</body>
+</html>
+	  
+  
