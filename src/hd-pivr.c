@@ -954,6 +954,7 @@ void processStatusJSONRequest(char *buffer, int csock, struct shared *global){
         send(csock,text,strlen(text),0);
         char tbuf[80];
         time_t timer;
+        int idx;
         struct tm* tm_info;
         time(&timer);
         tm_info = localtime(&timer);
@@ -968,7 +969,13 @@ void processStatusJSONRequest(char *buffer, int csock, struct shared *global){
         int recording = 0;
         pthread_mutex_lock(&(global->sharedlock));
         noofconnections = global->recording;
-        recording = global->recording>0;
+        recording = 0;
+        for(idx=0; idx<global->recording; idx++){
+        	if(strcmp(global->outfdIntIds[idx],SocketIntED)!=0){
+        		recording = 1;
+        		break;
+        	}
+        }
         pthread_mutex_unlock(&(global->sharedlock));
         pthread_mutex_lock(&(global->diskiolock));
         freebuffers = global->freecount;
