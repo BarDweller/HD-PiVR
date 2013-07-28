@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html>
+ <head>
+  <meta charset="utf-8">
+  <title>test</title>  
+  <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dijit/themes/claro/claro.css" media="screen">
+  <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dojo/resources/dojo.css">
+  <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dojox/grid/resources/claroGrid.css" />
+  <script src="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dojo/dojo.js" data-dojo-config="isDebug: true,parseOnLoad: true,foo: 'bar'"></script>
+<script>
+
+require(['dojo/_base/lang',  'dojo/_base/event', 'dojo/_base/array', 'dojo/dom', 'dojo/request', 'dojo/domReady!'],
+    function(lang, event, array, dom,  request){
+
+  	var callback = function(jdata){
+			var time = jdata.timestamp;
+			var recording = jdata.recording;
+			if(recording==0){
+			  recording="No";
+			}else{
+			  recording="Yes";
+			}
+			var connections = jdata.connections;
+			var node = dom.byId('status');
+			node.innerHTML = "<div align='right'><table border=0><tr><td width='25%' align='right'><b>Current Time:&nbsp;</b></td><td>"+time+"</td><td align='right'><b>&nbsp;Recording?&nbsp;</b></td><td>"+recording+"</td><td align='right'><b>&nbsp;Connections:&nbsp;</b></td><td>"+connections+"</td></tr></table></div>";			
+			
+			var focus = true;
+			window.onblur = function() { focus = false; }
+			window.onfocus = function() { focus = true; }
+			document.onblur = window.onblur;
+			document.focus = window.focus;
+	
+			//console.log(focus);
+			if (focus) {
+				window.setTimeout(submitreq,5000);
+			}
+		};
+		
+		var submitreq = function(){
+			var postdata = {
+				action: "jstatus",
+			};			
+			request.post("/action", { 
+				  handleAs: "json",
+				  data: {
+					action: "jstatus"
+				  }
+			   }).then(function(jdata){
+				  callback(jdata);
+			   });
+		}
+
+		console.log("starting status req");
+		submitreq();
+});
+
+</script>
+</head>
+<body class="claro">
+<div id="status"></div>
+</body>
+</html>
