@@ -1,0 +1,478 @@
+<!DOCTYPE HTML>
+<html>
+ <head>
+  <meta charset="utf-8">
+  <title>test</title>  
+  <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dijit/themes/claro/claro.css" media="screen">
+  <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dojo/resources/dojo.css">
+  <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dojox/grid/resources/claroGrid.css" />
+  <style>
+  #grid {
+		width: 1024px;
+		height: 300px;
+	}
+ </style>
+ <script src="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dojo/dojo.js" data-dojo-config="isDebug: true,parseOnLoad: true,foo: 'bar'"></script>
+<script>
+
+var dataStore;
+var grid;
+
+require(['dojo/_base/lang',  'dojo/_base/event', 'dojo/_base/array', 'dojox/grid/DataGrid', 'dojo/dom', 'dojo/store/Memory','dojo/data/ObjectStore',  'dojo/request', 'dojo/domReady!'],
+    function(lang, event, array, DataGrid, dom, Memory, ObjectStore, request){
+
+    /*set up data store*/
+    //var dataStore;
+	//var grid;
+	
+	request.post("/action", { 
+	      handleAs: "json",
+		  data: {
+			action: "listevents"
+		  }
+	   }).then(function(jdata){
+	   
+	   //console.log(jdata);
+	   
+	   dataStore = new ObjectStore({ objectStore:new Memory({ data: jdata.events }) });
+	   
+	   console.log("Built store");
+	   
+	   console.log("datastore: "+dataStore);
+	   
+	    /*create a new grid*/
+        grid = new DataGrid({
+        id: 'gridid',
+        store: dataStore,
+            query: { eventType: "*" },
+            queryOptions: {},
+			//rowSelector: '20px',
+			
+			selectionMode: "multiple",
+			
+			onRowClick: function(event){
+				//start by deselecting all other rows.. 
+				grid.selection.clear();
+				//then select this row, and all others with matching int/extid.
+				grid.selection.setSelected(event.rowIndex, true);
+				var item = grid.getItem(event.rowIndex);
+				var _item = item;
+				var _this = this;
+
+				grid.store.fetch({
+					onComplete: function(items){
+						array.forEach(items, function(item, index){ 
+							if(item.intID == _item.intID && item.extID == _item.extID ){
+								grid.selection.setSelected(index, true);
+							}
+						}, _this);
+					}
+				},this);
+				
+				grid.render();
+				grid.resize();
+				//event.stop();
+			},
+			
+			onRowContextMenu: function(event){
+				//start by deselecting all other rows.. 
+				grid.selection.clear();
+				//then select this row, and all others with matching int/extid.
+				grid.selection.setSelected(event.rowIndex, true);
+				var item = grid.getItem(event.rowIndex);
+				var _item = item;
+				var _this = this;
+
+				grid.store.fetch({
+					onComplete: function(items){
+						array.forEach(items, function(item, index){ 
+							if(item.intID == _item.intID  ){
+								grid.selection.setSelected(index, true);
+							}
+						}, _this);
+					}
+				},this);
+				
+				grid.render();
+				grid.resize();
+				//event.stop();
+			},
+			
+			structure: [
+					  {'name': 'Time', 'field': 'eventTime', 'width': '200px'},
+					  {'name': 'Name', 'field': 'eventData', 'width': '200px', formatter: function(item, rowIndex,cell){ return item.split("?")[1]; }},
+					  {'name': 'ShowID', 'field': 'eventData', 'width': '150px', formatter: function(item, rowIndex,cell){ return item.split("?")[0]; }},
+					  {'name': 'Type', 'field': 'eventType', 'width': '60px', formatter: function(item, rowIndex,cell){ 
+					       var r = "Unknown"; 
+						   if(item == "0"){ 
+						     r="Echo";
+						   } 
+						   if(item=="1"){
+						     r="Start Rec"; 
+						   } 
+						   if(item=="2"){ 
+						     r="Stop Rec"; 
+						   }
+						   if (item=="3"){ 
+						     r = "Channel";
+						   } 
+						   return r;
+						   }
+				      },
+					  {'name': 'ExtID', 'field': 'extID', 'width': '150px'},
+					  {'name': 'IntId', 'field': 'intID', 'width': '150px'}
+					]
+        });
+
+        /*append the new grid to the div*/
+        grid.placeAt("grid");
+
+        /*Call startup() to render the grid*/
+        grid.startup();
+		grid.resize();
+	   
+	   });
+	  
+
+});
+
+require(["dijit/Dialog", 
+"dijit/form/Form", 
+"dijit/form/TextBox",  
+"dijit/form/Button", 
+"dijit/form/Select", 
+"dijit/form/DateTextBox", 
+"dijit/form/TimeTextBox", 
+'dojo/store/Memory',
+'dojo/data/ObjectStore', 
+"dojo/date", 
+"dijit/registry", 
+"dijit", 
+"dojo", 
+"dojo/dom",
+"dojo/parser", 
+"dojo/request/xhr",
+"dojo/io-query",
+"dojo/date/locale",
+"dojo/_base/array",
+"dojo/_base/event",
+"dojo/domReady!"], function(Dialog, Form, TextBox, Button, Select, DateTextBox, TimeTextBox, Memory, ObjectStore, date, registry, dijit, dojo, dom, parser,xhr,ioQuery,locale,array,event){
+	
+	parser.parse();
+	
+	//var form = new Form();
+	var containerNode = dom.byId("containerNode");
+	
+    var type = new Select({
+        name: "type",
+        options: [
+            { label: "Echo", value: "echo" },
+            { label: "Start Recording", value: "startrec", selected: true },
+			{ label: "Stop Recording", value: "stoprec" },
+			{ label: "Channel Change", value: "channelchange" }
+        ]
+    });
+	type.placeAt("type");
+	
+	var filename,showid,cdata,edata = null;
+	
+	type.watch(function(propertyName, oldValue, newValue){ 
+		if(propertyName == "value"){ 
+			if(newValue == "echo"){
+				dojo.style(dojo.byId('addrecdiv'), "display", "none");
+				dojo.style(dojo.byId('stoprecdiv'), "display", "none");
+				dojo.style(dojo.byId('channeldiv'), "display", "none");
+				dojo.style(dojo.byId('echodiv'), "display", "inline-block");			  
+			}else if(newValue == "startrec") {
+				dojo.style(dojo.byId('addrecdiv'), "display", "inline-block");
+				dojo.style(dojo.byId('stoprecdiv'), "display", "none");
+				dojo.style(dojo.byId('channeldiv'), "display", "none");
+				dojo.style(dojo.byId('echodiv'), "display", "none");		  
+			}else if(newValue == "stoprec") {
+				dojo.style(dojo.byId('addrecdiv'), "display", "none");
+				dojo.style(dojo.byId('stoprecdiv'), "display", "inline-block");
+				dojo.style(dojo.byId('channeldiv'), "display", "none");
+				dojo.style(dojo.byId('echodiv'), "display", "none");	  
+			}else if(newValue == "channelchange") {
+				dojo.style(dojo.byId('addrecdiv'), "display", "none");
+				dojo.style(dojo.byId('stoprecdiv'), "display", "none");
+				dojo.style(dojo.byId('channeldiv'), "display", "inline-block");
+				dojo.style(dojo.byId('echodiv'), "display", "none");	  
+			}
+		} 
+	});
+
+	if(showid==null){
+	  showid = new TextBox({
+		label: "ShowID",
+		placeHolder: "tt1234567890"
+	  }).placeAt("showid");
+	}
+	if(filename==null){
+	  filename = new TextBox({
+		label: "Filename",
+		placeHolder: "myrecording.ts"
+	  }).placeAt("filename");	
+	}
+	if(cdata==null){
+		cdata = new TextBox({
+				label: "Channel Number",
+				placeHolder: "123"
+			  }).placeAt("channeldata");	  
+	}
+	if(edata==null){
+		edata =  new TextBox({
+			    label: "Message",
+				placeHolder: "Wibble Wibble"
+			  }).placeAt("echodata");
+	}
+	var date = new Date();
+    var datetb = new DateTextBox( {
+		value: date,
+		timePattern: 'DD-MMM-YYYY',
+	} ).placeAt("datediv");
+	
+	var timetb = new TimeTextBox( {
+		value: date
+	} ).placeAt("timediv");
+	
+	var intidtb = new TextBox({
+			label: "InternalId",
+			placeHolder: "Leave Empty for AutoAssign"
+		  }).placeAt("intiddiv");
+		  
+	var extidtb = new TextBox({
+			label: "ExternalId",
+			placeHolder: "dojoClient"
+		  }).placeAt("extiddiv");
+	
+    var but = new Button({
+      label: "OK",
+	  onClick : function(){
+	    var intidv = intidtb.get('value');
+		if(intidv==null || intidv==""){
+		  intidv = null;
+		}		
+		var extidv = extidtb.get('value');
+		if(extidv==null || extidv==""){
+		  extidv = "dojoClient."+type.get('value');
+		}
+		
+		//evil date formatting rubbish.. 
+		
+		//2 Jan 2010 12:45:20
+		//2+Jan+2010+12%3A45%3A20
+		//9 Jul 2013 19:38:29
+		//9%20Jul%202013%2019%3A38%3A29
+		//can't figure out how to make this give the 'right' answer, timePattern will add a date/time sep char.
+		var datestr = locale.format(datetb.get('value'), {formatLength: "long", datePattern: "d+MMM+yyyy+#"});
+		datestr = datestr.split("#")[0];
+		datestr += locale.format(timetb.get('value'), {formatLength: "long", datePattern: "HH:mm:ss#"});
+		//so instead, just use date pattern & split result on #.
+		datestr = datestr.split("#")[0];
+		datestr = datestr.split(":").join("%3A");
+		
+		//datestr is now url encoded and in the right format.
+		
+		t = type.get('value');
+		var postdata = {
+			       action: "addevent",
+				   extId: extidv
+		         };	    
+		if(intidv!=null){
+			     postdata.intId = intidv;
+		}					 
+		if(t == "echo"){
+		       postdata.type = 0;
+			   postdata.data = edata.get('value');
+			   postdata.filename=postdata.data;
+			   postdata.showid="dummy";
+		}else if(t == "startrec") {
+			   postdata.type = 1;			   
+			   filenamevalue = filename.get('value');
+			   if(filenamevalue!=null && filenamevalue!=""){
+				  postdata.filename = filenamevalue;
+			   }else{
+			      postdata.filename = "myrecording.ts";
+			   }
+			   showidval = showid.get('value');
+			   if(showidval!=null && showidval!=""){
+				  postdata.showid = showidval;
+			   }else{
+				  postdata.showid = "";
+			   }
+		}else if(t == "stoprec") {
+               postdata.type = 2;
+			   postdata.filename="dummy";
+			   postdata.showid="dummy"
+		}else if(t == "channelchange") {
+	           postdata.type = 3;
+			   postdata.data = cdata.get('value');
+			   postdata.filename=postdata.data;
+			   postdata.showid="dummy";
+		}
+		
+        console.log(postdata);	
+		var encoded = ioQuery.objectToQuery(postdata);
+        encoded+="&time="+datestr;
+
+        console.log(encoded);		
+        
+		xhr.post("/action", { 
+	      handleAs: "json",
+		  data: encoded
+	    }).then(function(jdata){
+		    //dataStore.destroy();
+			dataStore = new ObjectStore({ objectStore:new Memory({ data: jdata.events }) });
+			grid.setStore(dataStore);			
+			intidtb.set('value',jdata.addedId);
+		});
+		
+	  }
+    }).placeAt(containerNode,6);
+	
+	//set the initial layout, should match the default selection.
+	dojo.style(dojo.byId('addrecdiv'), "display", "inline-block");
+	dojo.style(dojo.byId('stoprecdiv'), "display", "none");
+	dojo.style(dojo.byId('channeldiv'), "display", "none");
+	dojo.style(dojo.byId('echodiv'), "display", "none");
+
+    var addEventButton = new Button({
+        label: "Add Event.",
+        onClick: function(){
+            addEventDialog.show();
+        }
+    }).placeAt("buttonRow");//"addbutton");
+	
+    
+    var removeSelectedButton = new Button({
+        label: "Remove Selected.",
+        onClick: function(){
+        // Get all selected items from the Grid:
+        var items = grid.selection.getSelected();
+        if(items.length){
+            // Iterate through the list of selected items.
+            // The current item is available in the variable
+            // "selectedItem" within the following function:
+            dojo.forEach(items, function(selectedItem){
+                if(selectedItem !== null){
+					var sintId = grid.store.getValues(selectedItem, "intID");
+					var sextId = grid.store.getValues(selectedItem, "extID");
+					
+					var postdata = {
+			         action: "removeevent",
+				     intId: sintId,
+					 extId: sextId,
+		            };	
+					var encoded = ioQuery.objectToQuery(postdata);
+							xhr.post("/action", { 
+							  handleAs: "json",
+							  data: encoded
+							}).then(function(jdata){
+								dataStore = new ObjectStore({ objectStore:new Memory({ data: jdata.events }) });
+								grid.setStore(dataStore);			
+							});
+                } // end if
+            }); // end forEach
+        } // end if
+        }
+    }).placeAt("buttonRow");//"removeSelected");
+    
+    var addRecordingButton = new Button({
+        label: "Add Recording.",
+        onClick: function(){
+			alert("Not implemented yet, but would allow you to say when it starts, how long for, and what channel, and it would add the relevant events for you");
+        }
+    }).placeAt("buttonRow"); //"addRecording");
+
+	var refreshButton = new Button({
+		label: "Refresh list",
+		onClick: function() {
+			xhr.post("/action", {
+				handleAs: "json",
+		  data: {
+			action: "listevents"
+		  }
+	   }).then(function(jdata){
+			dataStore = new ObjectStore({ objectStore:new Memory({ data: jdata.events }) });
+			grid.setStore(dataStore);			
+			intidtb.set('value',jdata.addedId);		
+	   });			
+		}
+	}).placeAt("buttonRow");
+	
+});
+
+</script>
+</head>
+<body class="claro">
+<!-- The main body -->
+<br/>
+<div style="height:40px;">
+	<div style="padding-left:40px;font-size:20px;"><b>HD PVR Web Recording UI</b></div>
+	<div id='outerdiv' style="width:auto; overflow:hidden; float:right; padding:0px; padding-right:40px;">
+		<iframe src="status.html" width="450px" height="30px;" frameborder="0" id='inneriframe' scrolling='no'></iframe>
+	</div>
+</div>
+<br>
+<hr>
+<div style="padding-left:40px;">
+	<div id="buttonRow" style="float:left; width:100%;"></div>
+	<br/><br/>
+	<div style="height:100%; width: 100%;">
+		<div id="grid"></div>
+	</div>
+</div>
+
+<!-- The dialogs -->
+<!-- Add Event-->
+<div data-dojo-type="dijit/Dialog" data-dojo-id="addEventDialog" id="addEventDialog" title="Add Event" style="display: none">
+  <table>
+    <tr>
+      <td>
+	  <label for="type">Event Type : </label>
+	  <div id="type"></div>
+	  </td>
+	</tr>
+    <tr>
+      <td>
+	  <table><tr>
+	      <td><label for="datediv">Date : </label>&nbsp;<div id="datediv"></div></td>
+		  <td><label for="time">Time : </label>&nbsp;<div id="timediv"></div></td>
+      </tr></table>
+      </td>
+	</tr>
+    <tr>
+     <td>
+	  <table><tr>
+	      <td><label for="intiddiv">IntId : </label>&nbsp;<div id="intiddiv"></div></td>
+		  <td><label for="extiddiv">ExtId : </label>&nbsp;<div id="extiddiv"></div></td>
+      </tr></table>
+      </td>
+	</tr>	
+	<tr></tr>
+	<tr>
+	  <td>
+	  <div id="addrecdiv">
+	  	  <table><tr>
+	        <td><label for="showid">ShowID : </label>&nbsp;<div id="showid"></div></td>
+		    <td><label for="filename">Filename : </label>&nbsp;<div id="filename"></div></td>
+          </tr></table>
+	  </div>
+	  <div id="channeldiv">
+	  	  <label for="channeldata">Channel Number : </label>
+	      <div id="channeldata"></div>
+	  </div>
+	  <div id="stoprecdiv">
+	  </div>
+	  <div id="echodiv">
+	  	  <label for="echodata">Echo Message : </label>
+	      <div id="echodata"></div>
+	  </div>
+	  </td>
+	</tr>
+   </table>
+   <div id="containerNode"></div>
+</div>
+</body>
+</html>
